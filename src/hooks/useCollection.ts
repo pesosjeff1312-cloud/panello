@@ -42,7 +42,7 @@ export function useCollection<K extends TableName>(
     const res = await q
     if (!mounted.current) return
     if (res.error) setError(res.error.message)
-    else { setRows((res.data ?? []) as RowOf<K>[]); setError(null) }
+     else { setRows((res.data ?? []) as unknown as RowOf<K>[]); setError(null) }
     setLoading(false)
   }, [table, userId, orderCol, orderAsc])
 
@@ -81,7 +81,7 @@ export function useCollection<K extends TableName>(
     const next = rows.map(r => (sameRow(match, r) ? { ...r, ...patch } : r))
     await guard(next, async () => {
       let q = supabase.from(table).update(patch as never)
-      for (const k of Object.keys(match)) q = q.eq(k, (match as Record<string, unknown>)[k] as never)
+      for (const k of Object.keys(match)) q = q.eq(k as never, (match as Record<string, unknown>)[k] as never)
       const r = await q
       return { error: r.error }
     })
@@ -90,7 +90,7 @@ export function useCollection<K extends TableName>(
   const remove = async (match: Partial<RowOf<K>>) => {
     await guard(rows.filter(r => !sameRow(match, r)), async () => {
       let q = supabase.from(table).delete()
-      for (const k of Object.keys(match)) q = q.eq(k, (match as Record<string, unknown>)[k] as never)
+      for (const k of Object.keys(match)) q = q.eq(k as never, (match as Record<string, unknown>)[k] as never)
       const r = await q
       return { error: r.error }
     })
