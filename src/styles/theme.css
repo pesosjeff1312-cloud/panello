@@ -1,0 +1,66 @@
+@import "tailwindcss";
+
+/* Token dark di satnaing/shadcn-admin + rampa accent della dashboard.
+   Vedi README → Design Tokens: nessun valore inventato qui. */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-popover: var(--popover);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+}
+
+.dark, :root {
+  --background: oklch(0.129 0.042 264.695);
+  --foreground: oklch(0.984 0.003 247.858);
+  --card: oklch(0.14 0.04 259.21);
+  --popover: oklch(0.208 0.042 265.755);
+  --primary: oklch(0.929 0.013 255.508);
+  --primary-foreground: oklch(0.208 0.042 265.755);
+  --muted: oklch(0.279 0.041 260.031);
+  --secondary: oklch(0.279 0.041 260.031);
+  --accent: oklch(0.279 0.041 260.031);
+  --muted-foreground: oklch(0.704 0.04 256.788);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.551 0.027 264.364);
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --color-accent-200: oklch(0.885 0.06 264);
+  --color-accent-300: oklch(0.79 0.11 264);
+  --color-accent-600: oklch(0.488 0.243 264.376);
+  --color-accent-700: oklch(0.40 0.20 264);
+  --radius: 0.625rem;
+}
+
+html { color-scheme: dark; }
+body {
+  margin: 0;
+  background: var(--background);
+  color: var(--foreground);
+  font: 400 14px/1.45 Inter, ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: -0.006em;
+  -webkit-font-smoothing: antialiased;
+}
+.tabular-nums { font-variant-numeric: tabular-nums; }
+a { color: var(--color-accent-300); text-decoration: none; }
+a:hover { color: var(--color-accent-200); text-decoration: underline; }
+:focus-visible { outline: none; border-color: var(--ring); box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring) 50%, transparent); }
+::selection { background: color-mix(in oklab, var(--color-accent-600) 45%, transparent); }
+button:disabled, input:disabled { opacity: .45; }
+@media (max-width: 768px) {
+  input, select, textarea { font-size: 16px; }        /* evita lo zoom su iOS */
+  button, input, select { min-height: 44px; }
+}
