@@ -1,41 +1,58 @@
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useSession } from '@/hooks/useDashboard'
+import { INPUT, BTN, BTN_ON, LABEL } from '@/components/ui'
 
-/** Magic link: nessuna password da gestire, un solo utente. */
+/** Email + password: nessun limite di invio, sessione persistente. */
 export function AuthGate({ children }: { children: (userId: string) => React.ReactNode }) {
   const { userId, ready } = useSession()
+  const [mode, setMode] = useState<'in' | 'up'>('in')
   const [email, setEmail] = useState('')
-  const [sent, setSent] = useState(false)
-  const [err, setErr] = useState<string | null>(null)
+  const [pw, setPw] = useState('')
+  const [msg, setMsg] = useState<{ t: 'err' | 'ok'; s: string } | null>(null)
+  const [busy, setBusy] = useState(false)
 
   if (!ready) return <div className="grid min-h-dvh place-items-center text-muted-foreground">…</div>
   if (userId) return <>{children(userId)}</>
 
-  const send = async (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault()
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: { emailRedirectTo: window.location.origin }
-    })
-    if (error) setErr(error.message)
-    else { setSent(true); setErr(null) }
+    if (pw.length < 6) return setMsg({ t: 'err', s: 'La password deve avere almeno 6 caratteri.' })
+    setBusy(true)
+    const res = mode === 'in'
+      ? await supabase.auth.signInWithPassword({ email, password: pw })
+      : await supabase.auth.signUp({ email, password: pw })
+    setBusy(false)
+    if (res.error) {
+      const m = res.error.message
+      setMsg({
+        t: 'err',
+        s: /invalid login/i.test(m) ? 'Email o password non corretti.'
+          : /already registered|already exists/i.test(m) ? 'Questa email ha già un account: usa "Accedi".'
+          : /confirm/i.test(m) ? 'Account da confermare: disattiva "Confirm email" in Supabase → Authentication → Providers → Email.'
+          : m
+      })
+    } else if (mode === 'up' && !res.data.session) {
+      setMsg({ t: 'ok', s: 'Account creato. Serve la conferma via email, oppure disattiva "Confirm email" in Supabase e riprova ad accedere.' })
+    }
   }
 
   return (
     <div className="grid min-h-dvh place-items-center p-6">
-      <form onSubmit={send} className="w-full max-w-sm rounded-[14px] border border-border bg-card p-6 shadow-sm">
-        <h1 className="text-lg font-bold tracking-tight">Pannello operativo</h1>
-        <p className="mt-1 text-xs text-muted-foreground">Accedi con il link via email.</p>
-        <input
-          type="email" required value={email} onChange={e => setEmail(e.target.value)}
-          placeholder="tu@email.it"
-          className="mt-4 h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm outline-none focus-visible:border-ring focus-visible:shadow-[0_0_0_3px_color-mix(in_oklab,var(--ring)_50%,transparent)]"
-        />
-        <button className="mt-3 h-9 w-full rounded-md border border-border bg-primary text-sm font-medium text-primary-foreground">
-          {sent ? 'Link inviato — controlla la mail' : 'Invia link'}
+      <form onSubmit={submit} className="w-full max-w-sm rounded-[14px] border border-border bg-card p-6 shadow-sm">
+        <h1 className="text-base font-semibold tracking-[0.01em]">Pannello operativo</h1>
+        <p className={LABEL + ' mt-1 block'}>{mode === 'in' ? 'accesso' : 'nuovo account'}</p>
+        <div className="mt-4 grid gap-2">
+          <input className={INPUT} type="email" required autoComplete="username" placeholder="email" value={email} onChange={e => setEmail(e.target.value)} />
+          <input className={INPUT} type="password" required minLength={6} autoComplete={mode === 'in' ? 'current-password' : 'new-password'} placeholder="password" value={pw} onChange={e => setPw(e.target.value)} />
+        </div>
+        <button className={BTN_ON + ' mt-3 w-full'} disabled={busy}>
+          {busy ? '…' : mode === 'in' ? 'Accedi' : 'Crea account'}
         </button>
-        {err && <p className="mt-2 text-xs text-destructive">{err}</p>}
+        <button type="button" className={BTN + ' mt-2 w-full'} onClick={() => { setMode(m => (m === 'in' ? 'up' : 'in')); setMsg(null) }}>
+          {mode === 'in' ? 'Non hai un account? Creane uno' : 'Hai già un account? Accedi'}
+        </button>
+        {msg && <p className={'mt-3 text-xs ' + (msg.t === 'err' ? 'text-destructive' : 'text-muted-foreground')} style={{ textWrap: 'pretty' }}>{msg.s}</p>}
       </form>
     </div>
   )
