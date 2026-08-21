@@ -3,10 +3,9 @@ import type { Collection } from '@/hooks/useCollection'
 import { PANEL, PanelHead, Empty, Del, Chip, INPUT, BTN, BTN_ON, LABEL, COLORS } from '@/components/ui'
 import { euro, iso, shortDate, fromIso, MONTHS, pad } from '@/lib/dates'
 
-export function FinancePanel({ transactions, settings, userId, now }: {
+export function FinancePanel({ transactions, settings, now }: {
   transactions: Collection<'transactions'>
   settings: Collection<'settings'>
-  userId: string
   now: Date
 }) {
   const s = settings.rows[0]
@@ -50,7 +49,7 @@ export function FinancePanel({ transactions, settings, userId, now }: {
     setDraft({ ...draft, descr: '', amount: '' })
     setOpen(false)
   }
-  const patchSettings = (patch: { goal?: number; goal_date?: string }) => void settings.update({ user_id: userId }, patch)
+  const patchSettings = (patch: { goal?: number; goal_date?: string }) => void settings.upsert(patch)
 
   return (
     <section className={PANEL}>

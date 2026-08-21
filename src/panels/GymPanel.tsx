@@ -31,6 +31,8 @@ export function GymPanel({ exercises, log, days, now, today }: {
     const rec = days.rows.find(d => d.day === day)
     if (day === today) return st === 'all' ? 'done' : rec?.state === 'rest' ? 'rest' : 'today'
     if (rec?.state) return rec.state
+    const loggedThatDay = list.some(e => log.rows.some(l => l.exercise_id === e.id && l.day === day))
+    if (loggedThatDay) return 'done'
     return day > today ? 'future' : 'skip'
   }
   const toggleRest = (day: string) => {

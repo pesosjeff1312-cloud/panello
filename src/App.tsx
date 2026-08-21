@@ -62,7 +62,7 @@ function Dashboard({ userId }: { userId: string }) {
         <div className="flex flex-col gap-4">
           <RemindersPanel reminders={d.reminders} now={d.now} />
           <RoutinePanel habits={d.habits} log={d.habitLog} today={d.today} streak={k.streak} />
-          <FinancePanel transactions={d.transactions} settings={d.settings} userId={userId} now={d.now} />
+          <FinancePanel transactions={d.transactions} settings={d.settings} now={d.now} />
           <NotesPanel notes={d.notes} />
         </div>
       </div>
