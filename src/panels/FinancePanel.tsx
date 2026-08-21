@@ -30,7 +30,7 @@ export function FinancePanel({ transactions, settings, now }: {
   const pct = goal > 0 ? Math.max(0, Math.min(100, (balance / goal) * 100)) : 0
   const missing = Math.max(0, goal - balance)
   const days = goalDate ? Math.max(0, Math.ceil((fromIso(goalDate).getTime() + 864e5 - now.getTime()) / 864e5)) : null
-  const perMonth = days ? missing / Math.max(1, days / 30.44) : 0
+  const perMonth = days !== null ? missing / Math.max(1, days / 30.44) : 0
 
   const bars = useMemo(() => Array.from({ length: 6 }, (_, i) => {
     const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1)
@@ -126,7 +126,8 @@ export function FinancePanel({ transactions, settings, now }: {
         <div className="flex items-center justify-between gap-2">
           <span className={LABEL}>Obiettivo risparmio</span>
           <span className="flex items-center gap-1.5 text-[13px]">
-            <input aria-label="Importo obiettivo" inputMode="numeric" defaultValue={String(goal)} onBlur={e => { const v = parseInt(e.target.value.replace(/\D/g, ''), 10); if (v) patchSettings({ goal: v }) }}
+            <input key={goal} aria-label="Importo obiettivo" inputMode="numeric" defaultValue={String(goal)}
+              onBlur={e => { const v = parseInt(e.target.value.replace(/\D/g, ''), 10); if (v) patchSettings({ goal: v }); else e.target.value = String(goal) }}
               className="w-20 border-b border-border bg-transparent text-right tabular-nums outline-none focus-visible:border-ring" />€
             <input aria-label="Scadenza obiettivo" type="date" value={goalDate} onChange={e => patchSettings({ goal_date: e.target.value })}
               className="border-b border-border bg-transparent tabular-nums outline-none focus-visible:border-ring" />

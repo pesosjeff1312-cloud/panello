@@ -78,7 +78,8 @@ create table public.exercises (
   text     text not null,
   detail   text not null default '3×12',   -- series × reps, display string
   position smallint not null default 0,
-  archived boolean not null default false
+  archived boolean not null default false,
+  weekday  smallint check (weekday between 0 and 6)   -- 0=lun..6=dom, null = non assegnato a un giorno
 );
 
 create table public.exercise_log (
