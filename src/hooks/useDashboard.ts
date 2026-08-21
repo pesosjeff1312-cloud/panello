@@ -45,9 +45,10 @@ export function useDashboard(userId: string | null) {
   const goal = Number(settings?.goal ?? 10000)
 
   const derived = useMemo(() => {
-    const balance = transactions.rows.reduce((s, t) => s + Number(t.amount), 0)
+    const settled = transactions.rows.filter(t => !t.pending)
+    const balance = settled.reduce((s, t) => s + Number(t.amount), 0)
     const month = today.slice(0, 7)
-    const inMonth = transactions.rows.filter(t => t.date.startsWith(month))
+    const inMonth = settled.filter(t => t.date.startsWith(month))
     const openReminders = reminders.rows.filter(r => !r.done)
     const urgent = openReminders.filter(r => ['overdue', 'soon'].includes(reminderStatus(r, now)))
     const todayEvents = events.rows.filter(e => e.date === today)

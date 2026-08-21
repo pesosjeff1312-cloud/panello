@@ -13,11 +13,14 @@ export function FinancePanel({ transactions, settings, now }: {
   const goalDate = s?.goal_date ?? ''
   const [filter, setFilter] = useState('Tutte')
   const [open, setOpen] = useState(false)
-  const [draft, setDraft] = useState({ descr: '', amount: '', type: 'in', date: iso(now), cat: '' })
+  const [draft, setDraft] = useState({ descr: '', amount: '', type: 'in', date: iso(now), cat: '', pending: false })
   const [formErr, setFormErr] = useState<string | null>(null)
-  const set = (k: string, v: string) => { setDraft(d => ({ ...d, [k]: v })); setFormErr(null) }
+  const set = (k: string, v: string | boolean) => { setDraft(d => ({ ...d, [k]: v })); setFormErr(null) }
 
-  const rows = transactions.rows
+  const all = transactions.rows
+  const rows = useMemo(() => all.filter(t => !t.pending), [all])
+  const pendingRows = useMemo(() => all.filter(t => t.pending).slice().sort((a, b) => b.date.localeCompare(a.date)), [all])
+  const pendingTotal = pendingRows.reduce((n, t) => n + Number(t.amount), 0)
   const cats = useMemo(() => [...new Set(rows.map(t => (t.cat ?? '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'it')), [rows])
   const balance = rows.reduce((n, t) => n + Number(t.amount), 0)
   const ym = iso(now).slice(0, 7)
@@ -47,11 +50,12 @@ export function FinancePanel({ transactions, settings, now }: {
     if (!draft.descr.trim()) return setFormErr('Manca la descrizione.')
     const v = Math.abs(parseFloat(String(draft.amount).replace(',', '.')))
     if (!v || isNaN(v)) return setFormErr('Importo non valido.')
-    void transactions.insert({ date: draft.date, descr: draft.descr.trim(), amount: draft.type === 'in' ? v : -v, cat: draft.cat.trim() })
-    setDraft({ ...draft, descr: '', amount: '' })
+    void transactions.insert({ date: draft.date, descr: draft.descr.trim(), amount: draft.type === 'in' ? v : -v, cat: draft.cat.trim(), pending: draft.pending })
+    setDraft({ ...draft, descr: '', amount: '', pending: false })
     setFormErr(null)
     setOpen(false)
   }
+  const settle = (id: string) => void transactions.update({ id }, { pending: false })
   const patchSettings = (patch: { goal?: number; goal_date?: string }) => void settings.upsert(patch)
 
   return (
@@ -68,8 +72,28 @@ export function FinancePanel({ transactions, settings, now }: {
         <div className="mt-2 flex gap-5 text-[13px]">
           <span className="flex items-center gap-1.5"><span className={LABEL}>Entrate</span><b className="tabular-nums" style={{ color: COLORS.pos }}>{euro(income)}</b></span>
           <span className="flex items-center gap-1.5"><span className={LABEL}>Uscite</span><b className="tabular-nums" style={{ color: spent > income ? COLORS.urg : COLORS.dim }}>{euro(spent)}</b></span>
+          {pendingRows.length > 0 && (
+            <span className="flex items-center gap-1.5"><span className={LABEL}>Sospeso</span><b className="tabular-nums" style={{ color: COLORS.dim }}>{pendingTotal > 0 ? '+' : '−'}{euro(Math.abs(pendingTotal))}</b></span>
+          )}
         </div>
       </div>
+
+      {pendingRows.length > 0 && (
+        <div className="border-t border-border">
+          <div className="flex items-center justify-between px-5 pt-3"><span className={LABEL}>Saldo sospeso · non conteggiato</span></div>
+          {pendingRows.map(t => (
+            <div key={t.id} className="flex items-center gap-2.5 border-b border-border px-5 py-2.5 text-[13px] last:border-0 hover:bg-[color-mix(in_oklab,var(--accent)_45%,transparent)]">
+              <span className="shrink-0 tabular-nums text-[10.5px] text-muted-foreground">{shortDate(t.date)}</span>
+              <span className="flex-1 truncate">{t.descr}{t.cat && <span className="ml-2 text-[10.5px] uppercase tracking-[0.08em] text-muted-foreground">{t.cat}</span>}</span>
+              <span className="shrink-0 tabular-nums text-muted-foreground">
+                {Number(t.amount) > 0 ? '+' : '−'}{euro(Math.abs(Number(t.amount)))}
+              </span>
+              <button className="shrink-0 text-[10.5px] text-muted-foreground hover:text-foreground" onClick={() => settle(t.id)}>Salda</button>
+              <Del onConfirm={() => void transactions.remove({ id: t.id })} />
+            </div>
+          ))}
+        </div>
+      )}
 
       {open && (
         <div className="grid gap-2 border-y border-border bg-[color-mix(in_oklab,var(--muted)_28%,var(--card))] px-5 py-3">
@@ -89,6 +113,10 @@ export function FinancePanel({ transactions, settings, now }: {
             <input type="date" className={INPUT + ' flex-1'} value={draft.date} onChange={e => set('date', e.target.value)} />
             <input className={INPUT + ' flex-1'} placeholder="Categoria" value={draft.cat} onChange={e => set('cat', e.target.value)} onKeyDown={e => e.key === 'Enter' && commit()} />
           </div>
+          <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <input type="checkbox" checked={draft.pending} onChange={e => set('pending', e.target.checked)} />
+            Sospeso (es. debito) — non conta nel saldo finché non è saldato
+          </label>
           <button className={BTN + ' w-full'} onClick={commit}>Registra</button>
           {formErr && <p className="text-xs text-destructive">{formErr}</p>}
         </div>

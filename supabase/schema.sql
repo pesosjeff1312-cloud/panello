@@ -47,9 +47,11 @@ create table public.transactions (
   descr   text not null,
   amount  numeric(12,2) not null,          -- positive = income, negative = expense
   cat     text default '',
+  pending boolean not null default false,  -- saldo sospeso: non conteggiato nel saldo finché non saldato
   created_at timestamptz not null default now()
 );
 create index transactions_user_date_idx on public.transactions (user_id, date desc);
+create index transactions_user_pending_idx on public.transactions (user_id, pending) where pending;
 
 -- routine ------------------------------------------------------------------
 create table public.habits (
