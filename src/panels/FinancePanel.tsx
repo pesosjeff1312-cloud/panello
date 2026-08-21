@@ -14,7 +14,8 @@ export function FinancePanel({ transactions, settings, now }: {
   const [filter, setFilter] = useState('Tutte')
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState({ descr: '', amount: '', type: 'in', date: iso(now), cat: '' })
-  const set = (k: string, v: string) => setDraft(d => ({ ...d, [k]: v }))
+  const [formErr, setFormErr] = useState<string | null>(null)
+  const set = (k: string, v: string) => { setDraft(d => ({ ...d, [k]: v })); setFormErr(null) }
 
   const rows = transactions.rows
   const cats = useMemo(() => [...new Set(rows.map(t => (t.cat ?? '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'it')), [rows])
@@ -43,10 +44,12 @@ export function FinancePanel({ transactions, settings, now }: {
   const list = (filter === 'Tutte' ? rows : rows.filter(t => t.cat === filter)).slice().sort((a, b) => b.date.localeCompare(a.date)).slice(0, 8)
 
   const commit = () => {
+    if (!draft.descr.trim()) return setFormErr('Manca la descrizione.')
     const v = Math.abs(parseFloat(String(draft.amount).replace(',', '.')))
-    if (!draft.descr.trim() || !v || isNaN(v)) return
+    if (!v || isNaN(v)) return setFormErr('Importo non valido.')
     void transactions.insert({ date: draft.date, descr: draft.descr.trim(), amount: draft.type === 'in' ? v : -v, cat: draft.cat.trim() })
     setDraft({ ...draft, descr: '', amount: '' })
+    setFormErr(null)
     setOpen(false)
   }
   const patchSettings = (patch: { goal?: number; goal_date?: string }) => void settings.upsert(patch)
@@ -54,7 +57,7 @@ export function FinancePanel({ transactions, settings, now }: {
   return (
     <section className={PANEL}>
       <PanelHead label="Riepilogo finanze">
-        <button className={open ? BTN_ON : BTN} onClick={() => setOpen(o => !o)}>{open ? 'Chiudi' : '+ Transazione'}</button>
+        <button className={open ? BTN_ON : BTN} onClick={() => { setOpen(o => !o); setFormErr(null) }}>{open ? 'Chiudi' : '+ Transazione'}</button>
       </PanelHead>
 
       <div className="px-5 py-4">
@@ -87,6 +90,7 @@ export function FinancePanel({ transactions, settings, now }: {
             <input className={INPUT + ' flex-1'} placeholder="Categoria" value={draft.cat} onChange={e => set('cat', e.target.value)} onKeyDown={e => e.key === 'Enter' && commit()} />
           </div>
           <button className={BTN + ' w-full'} onClick={commit}>Registra</button>
+          {formErr && <p className="text-xs text-destructive">{formErr}</p>}
         </div>
       )}
 
